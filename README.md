@@ -1,71 +1,260 @@
-# ts-rest-handler-line-annotation README
+# TypeScript ts-rest Route Annotations
 
-This is the README for your extension "ts-rest-handler-line-annotation". After writing up a brief description, we recommend including the following sections.
+A Visual Studio Code extension that provides inline route annotations for TypeScript files using the [ts-rest](https://ts-rest.com/) library pattern. Shows HTTP method, path, and summary information next to `@TsRestHandler` decorators in NestJS controllers.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Inline Route Annotations**: Displays route information directly next to `@TsRestHandler` decorators
+- **Real-time Updates**: Annotations update automatically as you edit your code
+- **Smart Contract Resolution**: Follows import statements to locate contract definitions
+- **Path Prefix Support**: Combines router `pathPrefix` with individual route paths
+- **Configurable Display**: Choose what information to show (method, path, summary)
+- **Performance Optimized**: Uses caching and debouncing for smooth editing experience
+- **Error Handling**: Graceful handling of parsing errors and missing files
 
-For example if there is an image subfolder under your extension project workspace:
+## Example
 
-\!\[feature X\]\(images/feature-x.png\)
+**Before:**
+```typescript
+// posts.controller.ts
+import c from './posts.contract';
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+@TsRestHandler(c.createPost)
+async createPost() { ... }
+
+@TsRestHandler(c.getAllPosts)
+async getAllPosts() { ... }
+```
+
+**After (with annotations):**
+```typescript
+// posts.controller.ts
+import c from './posts.contract';
+
+@TsRestHandler(c.createPost)  // POST /posts - Create a new post
+async createPost() { ... }
+
+@TsRestHandler(c.getAllPosts)  // GET /posts - Get all posts
+async getAllPosts() { ... }
+```
+
+## Supported Patterns
+
+### Basic Route Contract
+```typescript
+// posts.contract.ts
+const postsContract = c.router({
+  createPost: {
+    method: 'POST',
+    path: '/',
+    summary: 'Create a new post',
+    body: z.object({ title: z.string() }),
+    responses: {
+      201: z.object({ id: z.string() })
+    }
+  },
+  getAllPosts: {
+    method: 'GET',
+    path: '/',
+    summary: 'Get all posts',
+    responses: {
+      200: z.array(z.object({ id: z.string(), title: z.string() }))
+    }
+  }
+}, {
+  pathPrefix: '/posts'  // Combined with individual paths
+});
+
+export default postsContract;
+```
+
+### Controller Usage
+```typescript
+// posts.controller.ts
+import { Controller } from '@nestjs/common';
+import { TsRestHandler, TsRest } from '@ts-rest/nest';
+import postsContract from './posts.contract';
+
+@Controller()
+export class PostsController {
+  constructor(private readonly postsService: PostsService) {}
+
+  @TsRestHandler(postsContract.createPost)  // POST /posts - Create a new post
+  async createPost() {
+    return this.postsService.create(body);
+  }
+
+  @TsRestHandler(postsContract.getAllPosts)  // GET /posts - Get all posts
+  async getAllPosts() {
+    return this.postsService.findAll();
+  }
+}
+```
+
+## Commands
+
+The extension provides the following commands:
+
+- **`ts-rest: Toggle Route Annotations`** - Enable/disable route annotations
+- **`ts-rest: Refresh Route Annotations`** - Manually refresh all annotations
+
+Access these commands via:
+- Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+- Right-click context menu in TypeScript files
+
+## Configuration
+
+Configure the extension via VS Code settings:
+
+```json
+{
+  "tsRestAnnotations.enabled": true,
+  "tsRestAnnotations.showHttpMethod": true,
+  "tsRestAnnotations.showPath": true,
+  "tsRestAnnotations.showSummary": true,
+  "tsRestAnnotations.annotationPrefix": " // "
+}
+```
+
+### Settings Reference
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `tsRestAnnotations.enabled` | boolean | `true` | Enable/disable ts-rest route annotations |
+| `tsRestAnnotations.showHttpMethod` | boolean | `true` | Show HTTP method in annotations |
+| `tsRestAnnotations.showPath` | boolean | `true` | Show route path in annotations |
+| `tsRestAnnotations.showSummary` | boolean | `true` | Show route summary in annotations |
+| `tsRestAnnotations.annotationPrefix` | string | `" // "` | Prefix for route annotations |
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code 1.101.0 or higher
+- TypeScript files using the ts-rest library pattern
+- `@TsRestHandler` decorators in your controllers
 
-## Extension Settings
+## Extension Structure
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+The extension is built with a modular architecture:
 
-For example:
+```
+src/
+├── extension.ts              # Main extension entry point
+├── types.ts                  # TypeScript type definitions
+├── ast-parser.ts            # TypeScript AST parsing logic
+├── contract-parser.ts       # Contract file parsing logic
+└── route-annotation-provider.ts  # Main annotation logic
+```
 
-This extension contributes the following settings:
+## Performance Features
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- **Intelligent Caching**: Contract files and route information are cached
+- **Debounced Updates**: Annotations update smoothly during editing
+- **Smart Invalidation**: Cache is cleared only when files change
+- **Background Processing**: File parsing doesn't block the UI
 
-## Known Issues
+## Error Handling
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+The extension gracefully handles various error scenarios:
 
-## Release Notes
+- Missing contract files
+- Invalid TypeScript syntax
+- Unresolved imports
+- Malformed contract definitions
+- Network/file system errors
 
-Users appreciate release notes as you update your extension.
+Errors are logged to the console and shown as user-friendly messages when appropriate.
 
-### 1.0.0
+## Development
 
-Initial release of ...
+### Building from Source
 
-### 1.0.1
+```bash
+# Clone the repository
+git clone <repository-url>
+cd ts-rest-handler-line-annotation
 
-Fixed issue #.
+# Install dependencies
+npm install
 
-### 1.1.0
+# Compile TypeScript
+npm run compile
 
-Added features X, Y, and Z.
+# Watch for changes during development
+npm run watch
+```
 
----
+### Testing
 
-## Following extension guidelines
+```bash
+# Run linting
+npm run lint
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+# Run tests
+npm run test
+```
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+### Debugging
 
-## Working with Markdown
+1. Open the project in VS Code
+2. Press `F5` to launch a new Extension Development Host
+3. Open a TypeScript file with `@TsRestHandler` decorators
+4. Annotations should appear automatically
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+## Troubleshooting
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+### Annotations Not Appearing
 
-## For more information
+1. **Check if the extension is enabled**:
+   - Open Command Palette
+   - Run "ts-rest: Toggle Route Annotations"
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+2. **Verify file structure**:
+   - Ensure contract files are properly imported
+   - Check that `@TsRestHandler` decorators reference valid contract properties
 
-**Enjoy!**
+3. **Check the Developer Console**:
+   - Open Developer Tools (`Help > Toggle Developer Tools`)
+   - Look for error messages in the Console tab
+
+### Performance Issues
+
+1. **Large codebases**: The extension caches aggressively, but very large projects might experience slower initial loading
+2. **Frequent file changes**: Use the debouncing feature (automatically enabled)
+3. **Memory usage**: Clear cache with "ts-rest: Refresh Route Annotations" if needed
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| "Import not found" error | Check import paths and file names |
+| Annotations showing wrong information | Refresh annotations or restart VS Code |
+| Extension not activating | Ensure you're working with TypeScript files |
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+### Development Guidelines
+
+1. Follow TypeScript best practices
+2. Add tests for new features
+3. Update documentation for user-facing changes
+4. Ensure compatibility with the latest VS Code API
+
+## Code Generation
+
+The majority of the code in this repository was generated using **GitHub Copilot Agent** in Visual Studio Code. The agent helped design, implement, and refine the extension's architecture, TypeScript AST parsing logic, contract resolution system, and user interface components. This demonstrates the power of AI-assisted development for creating production-quality VS Code extensions.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes and updates.
+
+## Related Projects
+
+- [ts-rest](https://ts-rest.com/) - Type-safe REST APIs
+- [NestJS](https://nestjs.com/) - Progressive Node.js framework
+- [@ts-rest/nest](https://www.npmjs.com/package/@ts-rest/nest) - NestJS integration for ts-rest
