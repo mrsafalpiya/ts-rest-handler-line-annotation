@@ -2,6 +2,7 @@
   "name": "ts-rest-handler-line-annotation",
   "displayName": "TypeScript ts-rest Route Annotations",
   "description": "Show contract information as inline annotations for @TsRestHandler decorators",
+  "icon": "images/icon.png",
   "version": "0.0.1",
   "publisher": "mrsafalpiya",
   "repository": {
