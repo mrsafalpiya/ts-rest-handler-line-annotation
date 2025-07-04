@@ -4,6 +4,7 @@
   "description": "Show contract information as inline annotations for @TsRestHandler decorators",
   "icon": "images/icon.png",
   "version": "0.0.1",
+  "license": "MIT",
   "publisher": "mrsafalpiya",
   "repository": {
     "type": "git",
