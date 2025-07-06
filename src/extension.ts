@@ -6,8 +6,10 @@
  */
 import * as vscode from 'vscode';
 import { RouteAnnotationProvider } from './route-annotation-provider';
+import { TsRestCodeLensProvider } from './codelens-provider';
 
 let annotationProvider: RouteAnnotationProvider | undefined;
+let codeLensProvider: TsRestCodeLensProvider | undefined;
 
 /**
  * This method is called when your extension is activated
@@ -19,6 +21,19 @@ export function activate(context: vscode.ExtensionContext) {
 	try {
 		// Initialize the annotation provider
 		annotationProvider = new RouteAnnotationProvider(context);
+
+		// Initialize and register the CodeLens provider
+		console.log('Registering CodeLens provider...');
+		codeLensProvider = new TsRestCodeLensProvider();
+		const codeLensDisposable = vscode.languages.registerCodeLensProvider(
+			[
+				{ scheme: 'file', language: 'typescript' },
+				{ scheme: 'file', language: 'typescriptreact' }
+			],
+			codeLensProvider
+		);
+		context.subscriptions.push(codeLensDisposable);
+		console.log('CodeLens provider registered successfully');
 
 		// Register commands
 		registerCommands(context);
@@ -128,8 +143,108 @@ function registerCommands(context: vscode.ExtensionContext): void {
 		}
 	);
 
+	// Open test endpoint command
+	const openTestEndpointCommand = vscode.commands.registerCommand(
+		'tsRestAnnotations.openTestEndpoint',
+		async (url: string) => {
+			try {
+				if (url) {
+					// Try to decode the URL if it's already encoded
+					let decodedUrl = url;
+					if (url.includes('%7B') || url.includes('%7D')) {
+						decodedUrl = decodeURIComponent(url);
+					}
+					
+					// Import child_process to open URL directly without VS Code's URI encoding
+					const { exec } = require('child_process');
+					const os = require('os');
+					
+					let command: string;
+					const platform = os.platform();
+					
+					if (platform === 'darwin') {
+						// macOS
+						command = `open "${decodedUrl}"`;
+					} else if (platform === 'win32') {
+						// Windows  
+						command = `start "" "${decodedUrl}"`;
+					} else {
+						// Linux and others
+						command = `xdg-open "${decodedUrl}"`;
+					}
+					
+					exec(command, (error: any) => {
+						if (error) {
+							// Fallback to VS Code's method if system command fails
+							vscode.env.openExternal(vscode.Uri.parse(decodedUrl));
+						}
+					});
+				} else {
+					vscode.window.showWarningMessage('No test endpoint URL available');
+				}
+			} catch (error) {
+				// Fallback to VS Code's method
+				try {
+					if (url) {
+						await vscode.env.openExternal(vscode.Uri.parse(url));
+					}
+				} catch (fallbackError) {
+					vscode.window.showErrorMessage(
+						`Failed to open test endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`
+					);
+				}
+			}
+		}
+	);
+
+	// Copy test endpoint link command
+	const copyTestEndpointLinkCommand = vscode.commands.registerCommand(
+		'tsRestAnnotations.copyTestEndpointLink',
+		async (url: string) => {
+			try {
+				if (url) {
+					await vscode.env.clipboard.writeText(url);
+					vscode.window.showInformationMessage('Test endpoint link copied to clipboard');
+				} else {
+					vscode.window.showWarningMessage('No test endpoint URL available');
+				}
+			} catch (error) {
+				vscode.window.showErrorMessage(
+					`Failed to copy test endpoint link: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
+			}
+		}
+	);
+
+	// Copy endpoint link command
+	const copyEndpointLinkCommand = vscode.commands.registerCommand(
+		'tsRestAnnotations.copyEndpointLink',
+		async (url: string) => {
+			try {
+				if (url) {
+					await vscode.env.clipboard.writeText(url);
+					vscode.window.showInformationMessage('Endpoint link copied to clipboard');
+				} else {
+					vscode.window.showWarningMessage('No endpoint URL available');
+				}
+			} catch (error) {
+				vscode.window.showErrorMessage(
+					`Failed to copy endpoint link: ${error instanceof Error ? error.message : 'Unknown error'}`
+				);
+			}
+		}
+	);
+
 	// Register all commands with the context
-	context.subscriptions.push(toggleCommand, refreshCommand, statusCommand, debugFileCommand);
+	context.subscriptions.push(
+		toggleCommand, 
+		refreshCommand, 
+		statusCommand, 
+		debugFileCommand, 
+		openTestEndpointCommand, 
+		copyTestEndpointLinkCommand,
+		copyEndpointLinkCommand
+	);
 }
 
 /**
@@ -143,6 +258,12 @@ export function deactivate() {
 		if (annotationProvider) {
 			annotationProvider.dispose();
 			annotationProvider = undefined;
+		}
+
+		// Clean up the CodeLens provider
+		if (codeLensProvider) {
+			codeLensProvider.dispose();
+			codeLensProvider = undefined;
 		}
 
 		console.log('ts-rest-handler-line-annotation extension deactivated successfully');

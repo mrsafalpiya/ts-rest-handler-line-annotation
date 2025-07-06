@@ -45,6 +45,21 @@
         "command": "tsRestAnnotations.debugCurrentFile",
         "title": "Debug Current File",
         "category": "ts-rest"
+      },
+      {
+        "command": "tsRestAnnotations.openTestEndpoint",
+        "title": "Open Test Endpoint",
+        "category": "ts-rest"
+      },
+      {
+        "command": "tsRestAnnotations.copyTestEndpointLink",
+        "title": "Copy Test Endpoint Link",
+        "category": "ts-rest"
+      },
+      {
+        "command": "tsRestAnnotations.copyEndpointLink",
+        "title": "Copy Endpoint Link",
+        "category": "ts-rest"
       }
     ],
     "configuration": {
