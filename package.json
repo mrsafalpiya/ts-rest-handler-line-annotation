@@ -3,7 +3,7 @@
   "displayName": "TypeScript ts-rest Route Annotations",
   "description": "Show contract information as inline annotations for @TsRestHandler decorators",
   "icon": "images/icon.png",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "publisher": "mrsafalpiya",
   "repository": {
