@@ -7,6 +7,7 @@
 import * as vscode from 'vscode';
 import { RouteAnnotationProvider } from './route-annotation-provider';
 import { TsRestCodeLensProvider } from './codelens-provider';
+import { ReplCodeLensProvider } from './repl-codelens-provider';
 
 let annotationProvider: RouteAnnotationProvider | undefined;
 let codeLensProvider: TsRestCodeLensProvider | undefined;
@@ -34,6 +35,16 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 		context.subscriptions.push(codeLensDisposable);
 		console.log('CodeLens provider registered successfully');
+
+		// Register REPL CodeLens provider for TypeScript files
+		const replCodeLensProvider = new ReplCodeLensProvider();
+		const replCodeLensDisposable = vscode.languages.registerCodeLensProvider(
+			[
+				{ scheme: 'file', language: 'typescript' }
+			],
+			replCodeLensProvider
+		);
+		context.subscriptions.push(replCodeLensDisposable);
 
 		// Register commands
 		registerCommands(context);
@@ -235,6 +246,17 @@ function registerCommands(context: vscode.ExtensionContext): void {
 		}
 	);
 
+	// Run in REPL command
+	const runInReplCommand = vscode.commands.registerCommand(
+		'tsRestAnnotations.runInRepl',
+		async (className: string, methodName: string) => {
+			const command = `STARTUP_COMMAND='\$(${className}).${methodName}()' npm run repl:debug`;
+			const terminal = vscode.window.createTerminal({ name: 'REPL Debug' });
+			terminal.show();
+			terminal.sendText(command);
+		}
+	);
+
 	// Register all commands with the context
 	context.subscriptions.push(
 		toggleCommand, 
@@ -243,7 +265,8 @@ function registerCommands(context: vscode.ExtensionContext): void {
 		debugFileCommand, 
 		openTestEndpointCommand, 
 		copyTestEndpointLinkCommand,
-		copyEndpointLinkCommand
+		copyEndpointLinkCommand,
+		runInReplCommand
 	);
 }
 
