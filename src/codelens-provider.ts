@@ -235,7 +235,7 @@ export class TsRestCodeLensProvider implements vscode.CodeLensProvider {
       // Add trailing slash if the original contract path ends with one
       const baseUrl = `${cleanAppHost}/api-docs`;
       const trailingSlash = routeInfo.path.endsWith('/') ? '/' : '';
-      const fragment = `tag/${openApiTag}/${httpAdverb}${endpoint}${trailingSlash}`;
+      const fragment = `tag/${openApiTag.replaceAll(' ', '-')}/${httpAdverb}${endpoint}${trailingSlash}`;
       const testUrl = `${baseUrl}#${fragment}`;
 
       return testUrl;
